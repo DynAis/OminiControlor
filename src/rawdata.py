@@ -1,5 +1,6 @@
 import spacenavigator
 import time
+import scope
 
 def connect_device(device_number=0):
   device = spacenavigator.open(device_number)
@@ -30,4 +31,5 @@ if __name__ == "__main__":
   while True:
     state = get_state()
     print(state)
-    time.sleep(0.1)
+    scope.debug_state(state)
+    time.sleep(0.01)
