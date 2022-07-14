@@ -35,7 +35,7 @@ class State:
 
     def update(self):
         self.t = time.perf_counter()
-        self.pos_diff = np.array([self.raw.x, self.raw.y, self.raw.z])
+        self.pos_diff = np.array([-self.raw.x, self.raw.z, self.raw.y])
         self.rot_diff = np.array([self.raw.pitch, -self.raw.yaw, self.raw.roll])
         self.l_button_pressed = self.raw.buttons[0]
         self.r_button_pressed = self.raw.buttons[1]

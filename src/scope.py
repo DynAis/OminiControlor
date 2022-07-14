@@ -36,3 +36,40 @@ def send_to_vofa(func):
         sock.sendto(MESSAGE.encode("utf-8"), (UDP_IP, UDP_PORT))
 
     return wrapper
+
+
+@send_to_vofa
+def debug_in_vofa(cam):
+    # convert to csv string
+    MESSAGE = ",".join(
+        map(
+            str,
+            (
+                cam.t,
+                cam.pos[0],
+                cam.pos[1],
+                cam.pos[2],
+                cam.rot[0],
+                cam.rot[1],
+                cam.rot[2],
+                cam.l_button_pressed,
+                cam.r_button_pressed,
+                cam.event,
+                cam.t_diff,
+                cam.l_button.button_hold_time,
+                cam.r_button.button_hold_time,
+                cam.get_event_state("left_button_click"),
+                cam.get_event_state("right_button_click"),
+                cam.get_event_state("left_button_hold"),
+                cam.get_event_state("right_button_hold"),
+                cam.get_event_state("left_button_double_click"),
+                cam.get_event_state("right_button_double_click"),
+                cam.get_event_state("all_button_click"),
+                cam.get_event_state("all_button_hold"),
+                cam.get_event_state("all_button_double_click"),
+                cam.get_event_state("push_double"),
+            ),
+        )
+    )
+    MESSAGE = MESSAGE + "\n"
+    return MESSAGE

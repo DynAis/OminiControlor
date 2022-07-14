@@ -19,6 +19,7 @@ class Event(l0.State):
         "push_double": 10,
     }
 
+    # set 1 and 0 just in order to debug in vofa
     event_state_dict = {
         "left_button_click": 0,
         "right_button_click": 0,
@@ -203,47 +204,54 @@ class Event(l0.State):
             self.event,
         )
 
-    def is_idle(self) -> bool:
+    def __is_idle(self) -> bool:
         return (
             self.l_button.button_event
             == self.r_button.button_event
             == self.Button.event_dict["none"]
         )
 
-    def is_lb_rising_edge(self) -> bool:
+    def __is_lb_rising_edge(self) -> bool:
         return self.l_button_pressed == 0 and self.raw.buttons[0] == 1
 
-    def is_lb_falling_edge(self) -> bool:
+    def __is_lb_falling_edge(self) -> bool:
         return self.l_button_pressed == 1 and self.raw.buttons[0] == 0
 
-    def is_rb_rising_edge(self) -> bool:
+    def __is_rb_rising_edge(self) -> bool:
         return self.r_button_pressed == 0 and self.raw.buttons[1] == 1
 
-    def is_rb_falling_edge(self) -> bool:
+    def __is_rb_falling_edge(self) -> bool:
         return self.r_button_pressed == 1 and self.raw.buttons[1] == 0
 
-    def set_event(self, event_name) -> None:
+    def __set_event(self, event_name) -> None:
         self.event = Event.event_dict[event_name]
 
     def register_toggle(self, event_name: str):
         self.is_toggle_dict[event_name] = True
 
-    def is_toggle(self, event_name: str) -> bool:
+    def __is_toggle(self, event_name: str) -> bool:
         return self.is_toggle_dict[event_name]
 
     def get_event_state(self, event_name: str):
         return self.event_state_dict[event_name]
 
-    def reverse_state(self, event_name: str):
+    def get_active_event_state_list(self) -> list:
+        state_list = [self.event_dict["none"]]
+        for event_name, is_active in self.event_state_dict.items():
+            if is_active == 1:
+                state_list.append(self.event_dict[event_name])
+        return state_list
+
+    def __reverse_state(self, event_name: str):
         self.event_state_dict[event_name] = 1 ^ self.event_state_dict[event_name]
 
-    def on_state(self, event_name: str):
+    def __on_state(self, event_name: str):
         self.event_state_dict[event_name] = 1
 
-    def off_state(self, event_name: str):
+    def __off_state(self, event_name: str):
         self.event_state_dict[event_name] = 0
 
-    def init_push_timer(self):
+    def __init_push_timer(self):
         self.event = Event.event_dict["push_double"]
         self.is_pushed_double = False
         self.is_pushed = False
@@ -255,31 +263,31 @@ class Event(l0.State):
         self.t_diff = current_time - self.t
 
         # update button event
-        if self.is_lb_rising_edge():
+        if self.__is_lb_rising_edge():
             self.l_button.update(self.l_button_pressed, self.t_diff, True, False)
-        elif self.is_lb_falling_edge():
+        elif self.__is_lb_falling_edge():
             self.l_button.update(self.l_button_pressed, self.t_diff, False, True)
         else:
             self.l_button.update(self.l_button_pressed, self.t_diff, False, False)
 
-        if self.is_rb_rising_edge():
+        if self.__is_rb_rising_edge():
             self.r_button.update(self.r_button_pressed, self.t_diff, True, False)
-        elif self.is_rb_falling_edge():
+        elif self.__is_rb_falling_edge():
             self.r_button.update(self.r_button_pressed, self.t_diff, False, True)
         else:
             self.r_button.update(self.r_button_pressed, self.t_diff, False, False)
 
         # update push
-        if self.pos_diff[2] < -0.95 and not self.is_pushed:
+        if self.raw.z < -0.95 and not self.is_pushed:
             self.is_pushed = True
             self.pushed_timer = 0
-        elif self.pos_diff[2] > -0.95 and self.is_pushed:
+        elif self.raw.z > -0.95 and self.is_pushed:
             self.pushed_timer += self.t_diff
         elif (
-            self.is_pushed and self.pos_diff[2] < -0.95 and 0 < self.pushed_timer < 0.3
+            self.is_pushed and self.raw.z < -0.95 and 0 < self.pushed_timer < 0.3
         ):
             self.is_pushed_double = True
-        elif self.pos_diff[2] > -0.95 and not self.is_pushed:
+        elif self.raw.z > -0.95 and not self.is_pushed:
             self.is_pushed_double = False
             self.pushed_timer = 0
         elif self.is_pushed and self.pushed_timer > 0.3:
@@ -289,123 +297,123 @@ class Event(l0.State):
 
         # update global event
         # Event 0
-        if self.is_idle():
-            self.set_event("none")
+        if self.__is_idle():
+            self.__set_event("none")
 
         # Event 1
-        if self.is_toggle("left_button_click"):
+        if self.__is_toggle("left_button_click"):
             if self.l_button.is_clicked():
-                self.reverse_state("left_button_click")
-                self.set_event("left_button_click")
+                self.__reverse_state("left_button_click")
+                self.__set_event("left_button_click")
         else:
             if self.l_button.is_clicked():
-                self.on_state("left_button_click")
-                self.set_event("left_button_click")
+                self.__on_state("left_button_click")
+                self.__set_event("left_button_click")
             else:
-                self.off_state("left_button_click")
+                self.__off_state("left_button_click")
 
         # Event 2
-        if self.is_toggle("right_button_click"):
+        if self.__is_toggle("right_button_click"):
             if self.r_button.is_clicked():
-                self.reverse_state("right_button_click")
-                self.set_event("right_button_click")
+                self.__reverse_state("right_button_click")
+                self.__set_event("right_button_click")
         else:
             if self.r_button.is_clicked():
-                self.on_state("right_button_click")
-                self.set_event("right_button_click")
+                self.__on_state("right_button_click")
+                self.__set_event("right_button_click")
             else:
-                self.off_state("right_button_click")
+                self.__off_state("right_button_click")
 
         # Event 3
         if self.l_button.is_on_hold():
-            self.on_state("left_button_hold")
-            self.set_event("left_button_hold")
+            self.__on_state("left_button_hold")
+            self.__set_event("left_button_hold")
         else:
-            self.off_state("left_button_hold")
+            self.__off_state("left_button_hold")
 
         # Event 4
         if self.r_button.is_on_hold():
-            self.on_state("right_button_hold")
-            self.set_event("right_button_hold")
+            self.__on_state("right_button_hold")
+            self.__set_event("right_button_hold")
         else:
-            self.off_state("right_button_hold")
+            self.__off_state("right_button_hold")
 
         # Event 5
-        if self.is_toggle("left_button_double_click"):
+        if self.__is_toggle("left_button_double_click"):
             if self.l_button.is_double_click():
-                self.reverse_state("left_button_double_click")
-                self.set_event("left_button_double_click")
+                self.__reverse_state("left_button_double_click")
+                self.__set_event("left_button_double_click")
         else:
             if self.l_button.is_double_click():
-                self.on_state("left_button_double_click")
-                self.set_event("left_button_double_click")
+                self.__on_state("left_button_double_click")
+                self.__set_event("left_button_double_click")
             else:
-                self.off_state("left_button_double_click")
+                self.__off_state("left_button_double_click")
 
         # Event 6
-        if self.is_toggle("right_button_double_click"):
+        if self.__is_toggle("right_button_double_click"):
             if self.r_button.is_double_click():
-                self.reverse_state("right_button_double_click")
-                self.set_event("right_button_double_click")
+                self.__reverse_state("right_button_double_click")
+                self.__set_event("right_button_double_click")
         else:
             if self.r_button.is_double_click():
-                self.on_state("right_button_double_click")
-                self.set_event("right_button_double_click")
+                self.__on_state("right_button_double_click")
+                self.__set_event("right_button_double_click")
             else:
-                self.off_state("right_button_double_click")
+                self.__off_state("right_button_double_click")
 
         # Event 7
-        if self.is_toggle("all_button_click"):
+        if self.__is_toggle("all_button_click"):
             if self.l_button.is_clicked() and self.r_button.is_clicked():
-                self.reverse_state("all_button_click")
-                self.reverse_state("left_button_click")
-                self.reverse_state("right_button_click")
-                self.set_event("all_button_click")
+                self.__reverse_state("all_button_click")
+                self.__reverse_state("left_button_click")
+                self.__reverse_state("right_button_click")
+                self.__set_event("all_button_click")
         else:
             if self.l_button.is_clicked() and self.r_button.is_clicked():
-                self.on_state("all_button_click")
-                self.reverse_state("left_button_click")
-                self.reverse_state("right_button_click")
-                self.set_event("all_button_click")
+                self.__on_state("all_button_click")
+                self.__reverse_state("left_button_click")
+                self.__reverse_state("right_button_click")
+                self.__set_event("all_button_click")
             else:
-                self.off_state("all_button_click")
+                self.__off_state("all_button_click")
 
         # Event 8
         if self.l_button.is_on_hold() and self.r_button.is_on_hold():
-            self.on_state("all_button_hold")
-            self.off_state("left_button_hold")
-            self.off_state("right_button_hold")
-            self.set_event("all_button_hold")
+            self.__on_state("all_button_hold")
+            self.__off_state("left_button_hold")
+            self.__off_state("right_button_hold")
+            self.__set_event("all_button_hold")
         else:
-            self.off_state("all_button_hold")
+            self.__off_state("all_button_hold")
 
         # Event 9
-        if self.is_toggle("all_button_double_click"):
+        if self.__is_toggle("all_button_double_click"):
             if self.l_button.is_double_click() and self.r_button.is_double_click():
-                self.reverse_state("all_button_double_click")
-                self.reverse_state("left_button_double_click")
-                self.reverse_state("right_button_double_click")
-                self.set_event("all_button_double_click")
+                self.__reverse_state("all_button_double_click")
+                self.__reverse_state("left_button_double_click")
+                self.__reverse_state("right_button_double_click")
+                self.__set_event("all_button_double_click")
         else:
             if self.l_button.is_double_click() and self.r_button.is_double_click():
-                self.on_state("all_button_double_click")
-                self.reverse_state("left_button_double_click")
-                self.reverse_state("right_button_double_click")
-                self.set_event("all_button_double_click")
+                self.__on_state("all_button_double_click")
+                self.__reverse_state("left_button_double_click")
+                self.__reverse_state("right_button_double_click")
+                self.__set_event("all_button_double_click")
             else:
-                self.off_state("all_button_double_click")
+                self.__off_state("all_button_double_click")
 
         # Event 10
-        if self.is_toggle("push_double"):
+        if self.__is_toggle("push_double"):
             if self.is_pushed_double:
-                self.reverse_state("push_double")
-                self.init_push_timer()
+                self.__reverse_state("push_double")
+                self.__init_push_timer()
         else:
             if self.is_pushed_double:
-                self.on_state("push_double")
-                self.init_push_timer()
+                self.__on_state("push_double")
+                self.__init_push_timer()
             else:
-                self.off_state("push_double")
+                self.__off_state("push_double")
 
         # Event 11
         # if self.pushed and self.pushed_timer > 0.3:
