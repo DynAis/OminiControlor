@@ -15,6 +15,8 @@ class State:
             raise Exception("Device not found")
         self.pos_diff = np.array([0, 0, 0])
         self.rot_diff = np.array([0, 0, 0])
+        self.pre_pos_diff = np.array([0, 0, 0])
+        self.pre_rot_diff = np.array([0, 0, 0])
         self.t = 0
         self.l_button_pressed = 0
         self.r_button_pressed = 0
@@ -35,6 +37,8 @@ class State:
 
     def update(self):
         self.t = time.perf_counter()
+        self.pre_pos_diff = self.pos_diff
+        self.pre_rot_diff = self.rot_diff
         self.pos_diff = np.array([-self.raw.x, self.raw.z, self.raw.y])
         self.rot_diff = np.array([self.raw.pitch, -self.raw.yaw, self.raw.roll])
         self.l_button_pressed = self.raw.buttons[0]

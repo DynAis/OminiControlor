@@ -256,6 +256,7 @@ class Event(l0.State):
         self.is_pushed_double = False
         self.is_pushed = False
         self.pushed_timer = 0
+        time.sleep(0.3)
 
     def update(self):
         # update time calculation

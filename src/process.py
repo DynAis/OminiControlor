@@ -1,3 +1,4 @@
+from multiprocessing.dummy import Process
 import scope
 import event as l1
 import filters as f
@@ -6,10 +7,17 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 
-class Preocess(l1.Event):
+class Process(l1.Event):
     def __init__(self):
         super().__init__()
-        self.STOP_PROCESS_FLAG = False
+        self.STOP_EVALUATE_FLAG = False
+        self.AS_VARIABLE_TUNNER = False
+        # self.CRUISE_COUNTROL = False
+        # self.cruise_pos_diff = np.array([0, 0, 0])
+        # self.cruise_rot_diff = np.array([0, 0, 0])
+        # self.variable_list = []
+        self.pre_pos = np.array([0, 0, 0])
+        self.pre_rot = np.array([0, 0, 0])
         self.pos = np.array([0, 0, 0])  # in meter
         self.rot = np.array([0, 0, 0])  # in rad
         # filter list that storage filter function handle
@@ -28,39 +36,77 @@ class Preocess(l1.Event):
     def __str__(self) -> str:
         return super().__str__()
 
-    def stop(self):
-      self.STOP_PROCESS_FLAG = True
+    def stop_evaluate(self):
+        self.STOP_EVALUATE_FLAG = True
 
-    def start(self):
-      self.STOP_PROCESS_FLAG = False
+    def start_evaluate(self):
+        self.STOP_EVALUATE_FLAG = False
 
-    def toggle_start_stop(self):
-      self.STOP_PROCESS_FLAG = not self.STOP_PROCESS_FLAG
+    def toggle_evaluate(self):
+        self.STOP_EVALUATE_FLAG = not self.STOP_EVALUATE_FLAG
+        if self.STOP_EVALUATE_FLAG:
+            self.stop_evaluate()
+        else:
+            self.start_evaluate()
 
-    # TODO: 待修改
+    def start_variable_tunner(self):
+        self.AS_VARIABLE_TUNNER = True
+
+    def stop_variable_tunner(self):
+        self.AS_VARIABLE_TUNNER = False
+
+    # def start_cruise_control(self):
+    #     self.CRUISE_COUNTROL = True
+    #     self.cruise_pos_diff = self.pos_diff
+    #     self.cruise_rot_diff = self.rot_diff
+
+    # def stop_cruise_control(self):
+    #     self.CRUISE_COUNTROL = False
+
+    # def toggle_cruise_control(self):
+    #     self.CRUISE_COUNTROL = not self.CRUISE_COUNTROL
+    #     if self.CRUISE_COUNTROL:
+    #         self.cruise_pos_diff = np.array([-self.raw.x, self.raw.z, self.raw.y])
+    #         self.cruise_rot_diff = np.array([self.raw.pitch, -self.raw.yaw, self.raw.roll])
+
     def __update_position(self):
-        kp_pos = 1
+        # rotation_matrix = R.from_euler("xyz", self.rot).as_matrix()
+        # # calculate rotated position, change pos to another base vector space.
+        # pos = np.matmul(self.pos, rotation_matrix)
+        # # calculate position
+        # pos = pos + self.pos_diff
+        # # return to original base vector space
+        # pos = np.matmul(pos, np.linalg.inv(rotation_matrix))
+        # self.pos = pos
+
+        # storage pre_pos
+        self.pre_pos = self.pos
         # calculate rotation matrix
         rotation_matrix = R.from_euler("xyz", self.rot).as_matrix()
-        # calculate rotated position, change pos to another base vector space.
-        pos = np.matmul(self.pos, rotation_matrix)
-        # calculate position
-        pos = pos + kp_pos * self.pos_diff
-        # return to original base vector space
-        pos = np.matmul(pos, np.linalg.inv(rotation_matrix))
-        self.pos = pos
+        # 对位移误差进行左乘旋转矩阵,得到当前旋转下的位移在原空间中的数值
+        pos_diff = np.transpose(np.matmul(rotation_matrix, np.transpose(self.pos_diff)))
+        self.pos = self.pos + pos_diff
 
     # TODO: 待修改
     def __update_rotation(self):
-        kp_rot = 1
-        diff_rot = self.rot_diff
-        # rot = rot + kp_rot * diff_rot
-        self.rot = self.rot + kp_rot * diff_rot
+        # storage pre_rot
+        self.pre_rot = self.rot
+        # diff_rot = self.rot_diff
+        self.rot = self.rot + self.rot_diff
         # rot = np.matmul(R.from_euler('xyz', rot).as_matrix(), R.from_euler('xyz', kp_rot *diff_rot).as_matrix())
         # rot = R.from_matrix(rot).as_euler('xyz')
         # get dicimal part
         self.rot = np.mod(self.rot, 2 * np.pi)
-        self.rot[2] = 0
+        # self.rot[2] = 0
+
+        # rot = R.from_euler('xyz', self.rot)
+        # rot_diff_x = R.from_euler('xyz', (self.rot_diff[0],0,0))
+        # rot_diff_y = R.from_euler('xyz', (0,self.rot_diff[1],0))
+        # rot_diff_z = R.from_euler('xyz', (0,0,self.rot_diff[2]))
+        # # 对原有旋转矩阵左乘, 施加一个新的旋转
+        # rot = rot_diff_z * rot_diff_y * rot_diff_x * rot
+        # self.rot = np.mod(self.rot, 2 * np.pi)
+        # self.rot = rot.as_euler('xyz')
 
     def add_pre_pos_filter_list(self, event_name: str = "none", func_list: list = []):
         event_number = self.event_dict[event_name]
@@ -102,6 +148,7 @@ class Preocess(l1.Event):
         else:
             print("add_func: func_list is empty")
 
+    # the most importent function
     def update(self):
         super().update()
         state_list = self.get_active_event_state_list()
@@ -116,7 +163,7 @@ class Preocess(l1.Event):
                     print("update: button_func_list error: {}".format(e))
 
         # if flag is True, stop process
-        if self.STOP_PROCESS_FLAG:
+        if self.STOP_EVALUATE_FLAG:
             return
 
         # Process pre filter
@@ -125,20 +172,21 @@ class Preocess(l1.Event):
             if len(self.pre_pos_filter_list[state]) > 0:
                 try:
                     for func in self.pre_pos_filter_list[state]:
-                        self.pos_diff = func(self.pos_diff)
+                        self.pos_diff = func(self.pre_pos_diff, self.pos_diff)
                 except Exception as e:
                     print("update: pos_filter_list error: {}".format(e))
             if len(self.pre_rot_filter_list[state]) > 0:
                 try:
                     for func in self.pre_rot_filter_list[state]:
-                        self.rot_diff = func(self.rot_diff)
+                        self.rot_diff = func(self.pre_rot_diff, self.rot_diff)
                 except Exception as e:
                     print("update: rot_filter_list error: {}".format(e))
 
-        # update position
-        self.__update_position()
-        # update rotation
-        self.__update_rotation()
+        if not self.AS_VARIABLE_TUNNER:
+            # update position
+            self.__update_position()
+            # update rotation
+            self.__update_rotation()
 
         # Process after filter
         for state in state_list:
@@ -146,20 +194,20 @@ class Preocess(l1.Event):
             if len(self.after_pos_filter_list[state]) > 0:
                 try:
                     for func in self.after_pos_filter_list[state]:
-                        self.pos = func(self.pos)
+                        self.pos = func(self.pre_pos, self.pos)
                 except Exception as e:
                     print("update: after_pos_filter_list error: {}".format(e))
             if len(self.after_rot_filter_list[state]) > 0:
                 try:
                     for func in self.after_rot_filter_list[state]:
-                        self.rot = func(self.rot)
+                        self.rot = func(self.pre_rot, self.rot)
                 except Exception as e:
                     print("update: after_rot_filter_list error: {}".format(e))
 
 
 # output data to vofa as debuger
 @scope.send_to_vofa
-def debug_l2(filter: Preocess):
+def debug_l2(filter: Process):
     # convert to csv string
     MESSAGE = ",".join(
         map(
@@ -196,7 +244,7 @@ def debug_l2(filter: Preocess):
 
 
 @scope.send_to_vofa
-def debug_l2_final(filter: Preocess):
+def debug_l2_final(filter: Process):
     # convert to csv string
     MESSAGE = ",".join(
         map(
@@ -233,7 +281,7 @@ def debug_l2_final(filter: Preocess):
 
 
 if __name__ == "__main__":
-    filter = Preocess()
+    filter = Process()
     # append filter function to filter list according to event
     filter.add_after_pos_filter_list("left_button_hold", [f.amp_0_8])
     filter.add_after_rot_filter_list("left_button_hold", [f.amp_0_8])
