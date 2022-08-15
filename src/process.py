@@ -8,8 +8,8 @@ from scipy.spatial.transform import Rotation as R
 
 
 class Process(l1.Event):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, device_number: int=0):
+        super().__init__(device_number)
         self.STOP_EVALUATE_FLAG = False
         self.AS_VARIABLE_TUNNER = False
         # self.CRUISE_COUNTROL = False
@@ -91,7 +91,7 @@ class Process(l1.Event):
     def __update_rotation(self):
         # storage pre_rot
         self.pre_rot = self.rot
-        # diff_rot = self.rot_diff
+        # rot alone y-x-z
         self.rot = self.rot + self.rot_diff
         # rot = np.matmul(R.from_euler('xyz', rot).as_matrix(), R.from_euler('xyz', kp_rot *diff_rot).as_matrix())
         # rot = R.from_matrix(rot).as_euler('xyz')

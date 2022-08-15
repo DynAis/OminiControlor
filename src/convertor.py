@@ -103,6 +103,7 @@ class VRC_UAVCam_Client:
             self.uav_stop()
             self.vrcl_stop()
         self.ENABLE = enable
+        time.sleep(0.5)
 
     def uav_start(self):
         self.osc_client.send_message("/avatar/parameters/UAV_Bool", True)

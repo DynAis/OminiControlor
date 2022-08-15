@@ -5,14 +5,14 @@ import numpy as np
 
 
 class State:
-    DEVICE_NUMBER = 0
 
-    def __init__(self):
+    def __init__(self, device_number: int=0):
+        self.DEVICE_NUMBER = device_number
         device = spacenavigator.open(self.DEVICE_NUMBER)
         if device:
-            print("Device opened successfully")
+            print("3dconnexion device opened successfully")
         else:
-            raise Exception("Device not found")
+            raise Exception("3dconnexion device not found")
         self.pos_diff = np.array([0, 0, 0])
         self.rot_diff = np.array([0, 0, 0])
         self.pre_pos_diff = np.array([0, 0, 0])
@@ -22,7 +22,6 @@ class State:
         self.r_button_pressed = 0
         self.raw = None
 
-    # define string representation of the object
     def __str__(self) -> str:
         return "t: {}, pos_diff: {}, rot_diff: {}, l_button_pressed: {}, r_button_pressed: {}".format(
             self.t,
@@ -33,9 +32,13 @@ class State:
         )
 
     def update_raw_data(self):
+        """ read raw data from 3dconnexion device
+        """
         self.raw = spacenavigator.read()
 
     def update(self):
+        """ use raw data to update state
+        """
         self.t = time.perf_counter()
         self.pre_pos_diff = self.pos_diff
         self.pre_rot_diff = self.rot_diff
@@ -45,10 +48,8 @@ class State:
         self.r_button_pressed = self.raw.buttons[1]
 
 
-# output data to vofa as debuger
 @scope.send_to_vofa
 def debug_l0(state: State):
-    # convert to csv string
     MESSAGE = ",".join(
         map(
             str,

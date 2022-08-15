@@ -5,8 +5,8 @@ import filters as f
 
 
 class Camera(l2.Process):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, device_number: int = 0):
+        super().__init__(device_number)
 
     def __str__(self) -> str:
         return super().__str__()
@@ -43,7 +43,7 @@ class Camera(l2.Process):
 
     # 滑轨模式:固定在当前高度平面, 并且锁定z轴旋转
     def mode_slide(self, bind_key_name: str = "none"):
-        self.add_after_pos_filter_list(bind_key_name, [f.z_unchange])
+        self.add_after_pos_filter_list(bind_key_name, [f.y_unchange])
         self.add_after_rot_filter_list(bind_key_name, [f.z_zero])
 
     def update(self):

@@ -23,6 +23,9 @@ def z_zero(pre_vec3, vec3: np.ndarray) -> np.ndarray:
 def amp_0_001(pre_vec3, vec3: np.ndarray) -> np.ndarray:
     return vec3 * 0.001
 
+def amp_0_01(pre_vec3, vec3: np.ndarray) -> np.ndarray:
+    return vec3 * 0.01
+
 def amp_0_05(pre_vec3, vec3: np.ndarray) -> np.ndarray:
     return vec3 * 0.05
 
@@ -40,6 +43,15 @@ def amp_0_8(pre_vec3, vec3: np.ndarray) -> np.ndarray:
 
 def amp_0_99(pre_vec3, vec3: np.ndarray) -> np.ndarray:
     return vec3 * 0.99
+
+def amp_2(pre_vec3, vec3: np.ndarray) -> np.ndarray:
+    return vec3 * 2 
+
+def amp_5(pre_vec3, vec3: np.ndarray) -> np.ndarray:
+    return vec3 * 5
+
+def amp_10(pre_vec3, vec3: np.ndarray) -> np.ndarray:
+    return vec3 * 10 
 
 def exp(pre_vec3, vec3: np.ndarray) -> np.ndarray:
     return np.exp(vec3)

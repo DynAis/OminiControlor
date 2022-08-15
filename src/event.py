@@ -185,8 +185,8 @@ class Event(l0.State):
             elif self.button_hold_time > self.BUTTON_HOLD_THRESHOLD:
                 self.stil()
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, device_number: int=0) -> None:
+        super().__init__(device_number)
         self.event = 0
         self.t_diff = 0
         self.l_button = Event.Button()
