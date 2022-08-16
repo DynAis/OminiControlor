@@ -118,12 +118,12 @@ cam.add_func_list("right_button_double_click", [vrc_client.uav_toggle_follow])
 cam.mode_slide("right_button_hold")
 
 # ——————左右同时单击配置——————
-# cam.register_toggle("all_button_click")
-# cam.mode_cruise("all_button_click")
-cam.add_func_list("all_button_click", [toggle_record])
+cam.register_toggle("all_button_click")
+cam.mode_cruise("all_button_click")
+# cam.add_func_list("all_button_click", [toggle_record])
 
 # ——————左右同时双击配置——————
-cam.add_func_list("all_button_double_click", [replay_record])
+# cam.add_func_list("all_button_double_click", [replay_record])
 
 # ——————左右同时长按配置——————
 cam.add_func_list(
